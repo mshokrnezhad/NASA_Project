@@ -1,4 +1,5 @@
 const fs = require("fs")
+const planets = require("../routers/planets/planets.mongo")
 const { parse } = require("csv-parse");
 const path = require("path")
 
@@ -34,8 +35,8 @@ function loadPlanetsData() {
     })
 }
 
-function getAllPlanets() {
-    return results;
+async function getAllPlanets() {
+    return await planets.find({});
 }
 
 module.exports = {
