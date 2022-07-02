@@ -1,10 +1,10 @@
-const { getAllLaunches, addNewLaunch, isLaunchIdAvailable, deleteLaunch } = require("../../models/launches.model");
+const { getAllLaunches, addNewLaunch, checkLaunchIdAvailable, deleteLaunch } = require("../../models/launches.model");
 
-function httpGetAllLaunches(req, res) {
-    return res.status(200).json(getAllLaunches());
+async function httpGetAllLaunches(req, res) {
+    return res.status(200).json(await getAllLaunches());
 }
 
-function httpPostNewLaunch(req, res) {
+async function httpPostNewLaunch(req, res) {
     const launch = req.body;
 
     if (!launch.mission || !launch.rocket || !launch.launchDate || !launch.destination) {
@@ -20,23 +20,29 @@ function httpPostNewLaunch(req, res) {
         });
     }
 
-    addNewLaunch(launch)
+    await addNewLaunch(launch)
     return res.status(201).json(launch);
 }
 
-function httpDeleteLaunch(req, res) {
+async function httpDeleteLaunch(req, res) {
     const launchId = Number(req.params.id);
+    const isLaunchIdAvailable = await checkLaunchIdAvailable(launchId);
 
-    console.log(launchId)
-
-    if (!isLaunchIdAvailable(launchId)) {
+    if (!isLaunchIdAvailable) {
         return res.status(404).json({
             error: "Invalid launch ID!"
         });
     }
 
-    const aborted = deleteLaunch(launchId);
-    return res.status(200).json(aborted);
+    const aborted = await deleteLaunch(launchId);
+    if(!aborted){
+        res.status(400).json({
+            error: "deleting launch is failed."
+        });
+    }
+    return res.status(200).json({
+        ok: true
+    });
 }
 
 module.exports = {

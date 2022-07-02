@@ -1,6 +1,7 @@
-const launches = new Map();
+const launches = require("../routers/launches/launches.mongo");
+const planets = require("../routers/planets/planets.mongo");
+const DEFAULT_FLIGHT_NUMBER = 100;
 
-let latestFlightNumber = 100;
 const launch = {
     flightNumber: 100,
     mission: "Kepler Exploration X",
@@ -12,41 +13,82 @@ const launch = {
     success: true
 };
 
-launches.set(launch.flightNumber, launch);
+saveLaunch(launch);
 
-function getAllLaunches() {
-    return Array.from(launches.values());
+async function getAllLaunches() {
+    return await launches.find(
+        {},
+        {
+            "_id": 0,
+            "__v": 0
+        }
+    );
 }
 
-function addNewLaunch(launch) {
-    latestFlightNumber += 1;
-    launches.set(
-        latestFlightNumber,
-        Object.assign(launch, {
-            flightNumber: latestFlightNumber,
-            upcoming: true,
-            success: true,
-            customer: ["MadMas", "NASA"],
-        }));
+async function checkLaunchIdAvailable(launchId) {
+    return await launches.findOne({
+        flightNumber: launchId
+    });
 }
 
-function isLaunchIdAvailable(launchId) {
-    return launches.has(launchId);
+async function getLatestFlightNumber() {
+    const latestLaunch = await launches.findOne().sort("-flightNumber");
+
+    if (!latestLaunch) {
+        return DEFAULT_FLIGHT_NUMBER;
+    };
+
+    return latestLaunch.flightNumber;
 }
 
-function deleteLaunch(launchId) {
-    const aborted = launches.get(launchId);
+async function saveLaunch(data) {
+    const planet = await planets.findOne({
+        keplerName: data.destination
+    });
 
-    aborted.upcoming = false;
-    aborted.success = false;
+    if (!planet) {
+        throw new Error("No matching planet found!");
+    }
 
-    return aborted;
+    await launches.findOneAndUpdate(
+        {
+            flightNumber: data.flightNumber
+        },
+        data,
+        {
+            upsert: true
+        }
+    );
+};
+
+async function addNewLaunch(launch) {
+    const latestFlightNumber = await getLatestFlightNumber() + 1;
+    const newLaunch = Object.assign(launch, {
+        success: true,
+        upcoming: true,
+        customers: ["MadMas", "NASA"],
+        flightNumber: latestFlightNumber
+    });
+
+    await saveLaunch(newLaunch);
 }
 
+async function deleteLaunch(launchId) {
+    const aborted = await launches.updateOne(
+        {
+            flightNumber: launchId,
+        },
+        {
+            success: false,
+            upcoming: false
+        });
+
+    return aborted.modifiedCount === 1;
+}
 
 module.exports = {
     getAllLaunches,
     addNewLaunch,
-    isLaunchIdAvailable,
+    checkLaunchIdAvailable,
     deleteLaunch
 };
