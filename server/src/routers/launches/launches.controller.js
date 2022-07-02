@@ -1,7 +1,10 @@
 const { getAllLaunches, addNewLaunch, checkLaunchIdAvailable, deleteLaunch } = require("../../models/launches.model");
+const { getPagination } = require("../../services/query")
 
 async function httpGetAllLaunches(req, res) {
-    return res.status(200).json(await getAllLaunches());
+    const { skip, limit } = getPagination(req.query);
+    const launches = await getAllLaunches(skip, limit);
+    return res.status(200).json(launches);
 }
 
 async function httpPostNewLaunch(req, res) {
@@ -37,7 +40,7 @@ async function httpDeleteLaunch(req, res) {
     }
 
     const aborted = await deleteLaunch(launchId);
-    if(!aborted){
+    if (!aborted) {
         res.status(400).json({
             error: "deleting launch is failed."
         });
