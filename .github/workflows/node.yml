@@ -20,11 +20,11 @@ jobs:
       - name: use nodejs
         uses: actions/setup-node@v2
         with:
-          node-version: ${{node-version}}
-      - name: use mongodb for GitHub Actions
+          node-version: ${{matrix.node-version}}
+      - name: use mongodb
         uses: supercharge/mongodb-github-action@1.7.0
         with:
-          mongodb-version: ${{mongodb-version}}
+          mongodb-version: ${{matrix.mongodb-version}}
       - run: npm install
       - run: npm run build --prefix client
       - run: npm test
