@@ -18,3 +18,5 @@ COPY server/ /app/server/
 USER node
 
 CMD ["npm", "start", "--prefix", "server"]
+
+EXPOSE 8000
